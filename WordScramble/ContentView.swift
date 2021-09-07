@@ -18,10 +18,12 @@ struct ContentView: View {
     
     @State private var score = 0
     
+    let colors: [Color] = [.red, .green, .blue]
+    
     var body: some View {
         NavigationView {
             ZStack {
-                RadialGradient(gradient: Gradient(colors: [Color.blue, Color.red, Color.green]), center: .center, startRadius: 5, endRadius: 500).ignoresSafeArea()
+                RadialGradient(gradient: Gradient(colors: [Color.black, Color.white, Color.gray, Color.white, Color.gray, Color.white, Color.black]), center: .center, startRadius: 5, endRadius: 500).ignoresSafeArea()
                 VStack {
                     TextField("Enter your word", text: $newWord, onCommit: addNewWord)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -29,28 +31,40 @@ struct ContentView: View {
                         .autocapitalization(.none)
                     
                     Text("Score: \(score)")
-                    
+                        .bold()
+                        .coordinateSpace(name: "ListFrame")
+                   
                     List(usedWords, id: \.self) { word in
-                        HStack {
-                            Image(systemName: "\(word.count).circle")
-                            Text(word)
+                        GeometryReader { geometry in
+                            HStack {
+                                Image(systemName: "\(word.count).circle")
+                                    .foregroundColor(self.colors.randomElement())
+                                Text(word)
+                                    .font(.title2)
+                            }
+                            .frame(width: geometry.size.width)
+                            .background(Color.white)
+                            .padding(.bottom)
+                            .rotation3DEffect(.degrees(-Double(geometry.frame(in: .global).minY - geometry.size.height) / 25), axis: (x: 0, y: 1, z: 0))
+                            .accessibilityElement(children: .ignore)
+                            .accessibility(label: Text("\(word), \(word.count) letters"))
                         }
-                        .accessibilityElement(children: .ignore)
-                        .accessibility(label: Text("\(word), \(word.count) letters"))
+                        .frame(height: 30)
                     }
+                    
                 }
             }
-                .navigationBarTitle(rootWord)
-                .navigationBarItems(trailing: Button(action: startGame) {
-                    Text("Restart")
-                        .foregroundColor(.black)
-                        .padding()
-                })
-                .onAppear(perform: startGame)
-                
-                .alert(isPresented: $showingError) {
-                    Alert(title: Text(errorTitle), message: Text(errorMessage), dismissButton: .default(Text("OK")))
-                }
+            .navigationBarTitle(rootWord)
+            .navigationBarItems(trailing: Button(action: startGame) {
+                Text("Restart")
+                    .foregroundColor(.black)
+                    .padding()
+            })
+            .onAppear(perform: startGame)
+            
+            .alert(isPresented: $showingError) {
+                Alert(title: Text(errorTitle), message: Text(errorMessage), dismissButton: .default(Text("OK")))
+            }
             
         }
     }
