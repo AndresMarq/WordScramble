@@ -18,54 +18,60 @@ struct ContentView: View {
     
     @State private var score = 0
     
-    let colors: [Color] = [.red, .green, .blue]
-    
     var body: some View {
-        NavigationView {
-            ZStack {
-                RadialGradient(gradient: Gradient(colors: [Color.black, Color.white, Color.gray, Color.white, Color.gray, Color.white, Color.black]), center: .center, startRadius: 5, endRadius: 500).ignoresSafeArea()
-                VStack {
-                    TextField("Enter your word", text: $newWord, onCommit: addNewWord)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding()
-                        .autocapitalization(.none)
-                    
-                    Text("Score: \(score)")
-                        .bold()
-                        .coordinateSpace(name: "ListFrame")
-                   
-                    List(usedWords, id: \.self) { word in
-                        GeometryReader { geometry in
-                            HStack {
-                                Image(systemName: "\(word.count).circle")
-                                    .foregroundColor(self.colors.randomElement())
-                                Text(word)
-                                    .font(.title2)
+        GeometryReader{ fullView in
+            NavigationView {
+                ZStack {
+                    RadialGradient(gradient: Gradient(colors: [Color.black, Color.white, Color.gray, Color.white, Color.gray, Color.white, Color.black]), center: .center, startRadius: 5, endRadius: 500).ignoresSafeArea()
+                    VStack {
+                        TextField("Enter your word", text: $newWord, onCommit: addNewWord)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding()
+                            .autocapitalization(.none)
+                            .coordinateSpace(name: "TextField")
+                        
+                        Text("Score: \(score)")
+                            .bold()
+                            .coordinateSpace(name: "ScoreField")
+                       
+                        List(usedWords, id: \.self) { word in
+                            GeometryReader { geo in
+                                HStack {
+                                    Image(systemName: "\(word.count).circle")
+                                        .foregroundColor(changeColor(geoMinY: geo.frame(in: .global).minY, viewHeight: fullView.size.height))
+                                    Text(word)
+                                        .font(.title2)
+                                }
+                                
+                                .frame(width: geo.size.width)
+                                .background(Color.white)
+                                .padding(.bottom)
+                                .offset(x: offsetWord(geoMinY: geo.frame(in: .global).minY, viewHeight: fullView.size.height), y: 0)
+                                .animation(.default)
+                                .accessibilityElement(children: .ignore)
+                                .accessibility(label: Text("\(word), \(word.count) letters"))
+                                
                             }
-                            .frame(width: geometry.size.width)
-                            .background(Color.white)
-                            .padding(.bottom)
-                            .rotation3DEffect(.degrees(-Double(geometry.frame(in: .global).minY - geometry.size.height) / 25), axis: (x: 0, y: 1, z: 0))
-                            .accessibilityElement(children: .ignore)
-                            .accessibility(label: Text("\(word), \(word.count) letters"))
+                            .coordinateSpace(name: "geometry")
                         }
-                        .frame(height: 30)
+                        .coordinateSpace(name: "list")
                     }
-                    
                 }
+                .navigationBarTitle(rootWord)
+                .navigationBarItems(trailing: Button(action: startGame) {
+                    Text("Restart")
+                        .foregroundColor(.black)
+                        .padding()
+                })
+                .onAppear(perform: {
+                    startGame()
+                })
+                
+                .alert(isPresented: $showingError) {
+                    Alert(title: Text(errorTitle), message: Text(errorMessage), dismissButton: .default(Text("OK")))
+                }
+                
             }
-            .navigationBarTitle(rootWord)
-            .navigationBarItems(trailing: Button(action: startGame) {
-                Text("Restart")
-                    .foregroundColor(.black)
-                    .padding()
-            })
-            .onAppear(perform: startGame)
-            
-            .alert(isPresented: $showingError) {
-                Alert(title: Text(errorTitle), message: Text(errorMessage), dismissButton: .default(Text("OK")))
-            }
-            
         }
     }
     
@@ -155,6 +161,21 @@ struct ContentView: View {
         errorTitle = title
         errorMessage = message
         showingError = true
+    }
+    
+    func offsetWord(geoMinY: CGFloat, viewHeight: CGFloat) -> CGFloat {
+        let offset = geoMinY - viewHeight
+        if offset < 0 {
+            return 0
+        } else {
+            return offset * 20
+        }
+    }
+    
+    func changeColor(geoMinY: CGFloat, viewHeight: CGFloat) -> Color {
+        let input = Double(geoMinY / viewHeight)
+        let color = Color(red: input, green: (1 - input) / 4, blue: input / 2)
+        return color
     }
 }
 
